@@ -33,7 +33,7 @@
     "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@typechain/ethers-v6": "^0.5.1",
     "@typechain/hardhat": "^9.1.0",
-    "@zama-fhe/relayer-sdk": "0.3.0-5",
+    "@zama-fhe/relayer-sdk": "0.3.0-6",
     "chai": "^4.5.0",
     "chai-as-promised": "^8.0.1",
     "cross-env": "^7.0.3",

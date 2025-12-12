@@ -8,7 +8,6 @@ import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
  * @title PublicDecryptMultiple
  * @notice Public decrypt multiple values using EntropyOracle and makePubliclyDecryptable
  * @dev Example demonstrating FHEVM public-decryption concepts
- * @chapter public-decryption
  */
 contract PublicDecryptMultiple is ZamaEthereumConfig {
     // TODO: Add your contract implementation here
