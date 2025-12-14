@@ -13,7 +13,11 @@
     "prettier:write": "prettier --write \"**/*.{js,json,md,sol,ts,yml}\"",
     "test": "hardhat test",
     "test:sepolia": "hardhat test --network sepolia",
-    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain"
+    "typechain": "cross-env TS_NODE_TRANSPILE_ONLY=true hardhat typechain",
+    "setup": "node scripts/setup.js",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:localhost": "hardhat run scripts/deploy.ts --network localhost",
+    "verify": "hardhat run scripts/verify.ts --network sepolia"
   },
   "keywords": [
     "fhevm",
