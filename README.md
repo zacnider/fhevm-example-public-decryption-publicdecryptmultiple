@@ -1,6 +1,10 @@
-# EntropyOracle
+# EntropyPublicDecryptMultiple
 
-Main oracle contract for entropy requests - Developer-friendly interface
+Learn how to public decrypt multiple values using encrypted randomness and makepubliclydecryptable
+
+## 🎓 What You'll Learn
+
+This example teaches you how to use FHEVM to build privacy-preserving smart contracts. You'll learn step-by-step how to implement encrypted operations, manage permissions, and work with encrypted data.
 
 ## 🚀 Quick Start
 
@@ -48,57 +52,71 @@ Main oracle contract for entropy requests - Developer-friendly interface
 
 ---
 
-## 📋 Overview
+## 📚 Overview
 
-@title EntropyOracle
-@notice Main oracle contract for entropy requests - Developer-friendly interface
-@dev Developers call requestEntropy() with 0.00001 ETH fee
+@title EntropyPublicDecryptMultiple
+@notice Public decrypt multiple values using encrypted randomness and makePubliclyDecryptable
+@dev This example teaches you how to integrate encrypted randomness into your FHEVM contracts: using entropy for public decryption of multiple values
+In this example, you will learn:
+- How to integrate encrypted randomness
+- How to use encrypted randomness to enhance public decryption patterns for multiple values
+- Combining entropy with public decryption for batch operations
+- Entropy-based public key generation for multiple values
 
-@notice Deploy EntropyOracle
-@param _chaosEngine Address of FHEChaosEngine contract
-@param _feeRecipient Address to receive fees
-@param initialOwner Initial owner address
+@notice Constructor - sets encrypted randomness address
+@param _encrypted randomness Address of encrypted randomness contract
 
-@notice Request entropy - Main function for developers
-@param tag Unique tag for this request (e.g., keccak256("lottery-draw"))
-@return requestId Unique request ID
-@dev Requires exactly 0.00001 ETH fee
+@notice Store encrypted value and make it publicly decryptable
+@param key Key/index for storing the value
+@param encryptedInput Encrypted value from user
+@param inputProof Input proof for encrypted value
+@dev Makes value decryptable by anyone (use with caution)
 
-@notice Get encrypted entropy for a request
-@param requestId Request ID returned from requestEntropy
-@return entropy Encrypted entropy (euint64)
+@notice Store multiple encrypted values and make them publicly decryptable
+@param keys Array of keys for storing values
+@param encryptedInputs Array of encrypted values from user
+@param inputProofs Array of input proofs for encrypted values
+@dev Batch operation to store and make multiple values publicly decryptable
 
-@notice Check if request is fulfilled
-@param requestId Request ID
-@return fulfilled True if entropy is ready
+@notice Request entropy for enhanced public decryption
+@param tag Unique tag for this request
+@return requestId Request ID from encrypted randomness
+@dev Requires 0.00001 ETH fee
 
-@notice Get request details
-@param requestId Request ID
-@return consumer Consumer address
-@return tag Request tag
-@return timestamp Request timestamp
-@return fulfilled Fulfillment status
+@notice Store value with entropy enhancement and make publicly decryptable
+@param key Key/index for storing the value
+@param encryptedInput Encrypted value from user
+@param inputProof Input proof for encrypted value
+@param requestId Request ID from requestEntropy()
 
-@notice Get current fee amount
-@return fee Fee in wei (0.00001 ETH = 10000000000000 wei)
+@notice Store multiple values with entropy enhancement and make publicly decryptable
+@param keys Array of keys for storing values
+@param encryptedInputs Array of encrypted values from user
+@param inputProofs Array of input proofs for encrypted values
+@param requestId Request ID from requestEntropy()
+@dev Batch operation with entropy enhancement
 
-@notice Update fee recipient (owner only)
-@param newRecipient New fee recipient address
+@notice Get encrypted value at a specific key (publicly decryptable)
+@param key Key/index to retrieve
+@return Encrypted value (euint64) - anyone can decrypt this
+@dev Anyone can use FHEVM SDK publicDecrypt to decrypt this value
 
-@notice Update chaos engine (owner only, emergency use)
-@param newEngine New chaos engine address
+@notice Check if a key is initialized
+@param key Key to check
+@return true if initialized, false otherwise
 
-@notice Emergency withdraw (owner only)
-@param to Recipient address
-@param amount Amount to withdraw
+@notice Get total number of values stored
+@return Total count of initialized values
+
+@notice Get encrypted randomness address
 
 
 
-## 🔐 Zama FHEVM Usage
+## 🔐 Learn Zama FHEVM Through This Example
 
-This example demonstrates the following **Zama FHEVM** features:
+This example teaches you how to use the following **Zama FHEVM** features:
 
-### Zama FHEVM Features Used
+### What You'll Learn About
 
 - **ZamaEthereumConfig**: Inherits from Zama's network configuration
   ```solidity
@@ -149,13 +167,13 @@ euint64 result = FHE.add(encryptedValue, FHE.asEuint64(1));
 FHE.allowThis(result);
 ```
 
-### Zama FHEVM Concepts Demonstrated
+### FHEVM Concepts You'll Learn
 
-1. **Encrypted Arithmetic**: Using Zama FHEVM to encrypted arithmetic
-2. **Encrypted Comparison**: Using Zama FHEVM to encrypted comparison
-3. **External Encryption**: Using Zama FHEVM to external encryption
-4. **Permission Management**: Using Zama FHEVM to permission management
-5. **Entropy Integration**: Using Zama FHEVM to entropy integration
+1. **Encrypted Arithmetic**: Learn how to use Zama FHEVM for encrypted arithmetic
+2. **Encrypted Comparison**: Learn how to use Zama FHEVM for encrypted comparison
+3. **External Encryption**: Learn how to use Zama FHEVM for external encryption
+4. **Permission Management**: Learn how to use Zama FHEVM for permission management
+5. **Entropy Integration**: Learn how to use Zama FHEVM for entropy integration
 
 ### Learn More About Zama FHEVM
 
@@ -164,262 +182,267 @@ FHE.allowThis(result);
 - 💻 [Zama FHEVM GitHub](https://github.com/zama-ai/fhevm)
 
 
+
 ## 🔍 Contract Code
 
 ```solidity
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.27;
 
-import {FHE, euint64} from "@fhevm/solidity/lib/FHE.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {FHE, euint64, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import {ZamaEthereumConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 import "./IEntropyOracle.sol";
-import "./FHEChaosEngine.sol";
 
 /**
- * @title EntropyOracle
- * @notice Main oracle contract for entropy requests - Developer-friendly interface
- * @dev Developers call requestEntropy() with 0.00001 ETH fee
+ * @title EntropyPublicDecryptMultiple
+ * @notice Public decrypt multiple values using EntropyOracle and makePubliclyDecryptable
+ * @dev Example demonstrating EntropyOracle integration: using entropy for public decryption of multiple values
+ * 
+ * This example shows:
+ * - How to integrate with EntropyOracle
+ * - Using entropy to enhance public decryption patterns for multiple values
+ * - Combining entropy with public decryption for batch operations
+ * - Entropy-based public key generation for multiple values
  */
-contract EntropyOracle is IEntropyOracle, Ownable, ReentrancyGuard {
-    // ============ Constants ============
+contract EntropyPublicDecryptMultiple is ZamaEthereumConfig {
+    // Entropy Oracle interface
+    IEntropyOracle public entropyOracle;
     
-    /// @notice Fee per entropy request: 0.00001 ETH = 10000000000000 wei
-    uint256 public constant FEE_AMOUNT = 0.00001 ether; // 10000000000000 wei
+    // Mapping to store multiple encrypted values by key (publicly decryptable)
+    mapping(uint256 => euint64) private encryptedValues;
     
-    // ============ State Variables ============
+    // Track which keys have been initialized
+    mapping(uint256 => bool) public isInitialized;
     
-    /// @notice Core chaos engine
-    FHEChaosEngine public chaosEngine;
+    // Track entropy requests
+    mapping(uint256 => bool) public entropyRequests;
     
-    /// @notice Fee recipient address
-    address public feeRecipient;
+    // Total number of values stored
+    uint256 public totalValues;
     
-    /// @notice Request counter
-    uint256 private requestCounter;
-    
-    /// @notice Request structure
-    struct EntropyRequest {
-        address consumer;
-        bytes32 tag;
-        euint64 encryptedEntropy;
-        uint256 timestamp;
-        bool fulfilled;
-    }
-    
-    /// @notice Mapping of request ID to request
-    mapping(uint256 => EntropyRequest) public requests;
-    
-    // ============ Events ============
-    
-    event EntropyRequested(
-        uint256 indexed requestId,
-        bytes32 indexed hashedConsumer, // Hashed consumer address for privacy
-        bytes32 hashedTag,              // Hashed tag for privacy
-        uint256 feePaid
-    );
-    
-    event EntropyFulfilled(
-        uint256 indexed requestId,
-        bytes32 indexed hashedConsumer, // Hashed consumer address for privacy
-        bytes32 hashedTag               // Hashed tag for privacy
-    );
-    
-    event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
-    event ChaosEngineUpdated(address indexed oldEngine, address indexed newEngine);
-    
-    // ============ Errors ============
-    
-    error InsufficientFee(uint256 required, uint256 provided);
-    error ChaosEngineNotSet();
-    error RequestNotFulfilled(uint256 requestId);
-    error InvalidAddress();
-    
-    // ============ Constructor ============
+    event ValueStored(uint256 indexed key, address indexed user);
+    event ValuesStoredBatch(uint256[] indexed keys, address indexed user);
+    event ValueMadePubliclyDecryptable(uint256 indexed key);
+    event EntropyRequested(uint256 indexed requestId, address indexed caller);
+    event ValueStoredWithEntropy(uint256 indexed key, uint256 indexed requestId, address indexed user);
+    event ValuesStoredBatchWithEntropy(uint256[] indexed keys, uint256 indexed requestId, address indexed user);
     
     /**
-     * @notice Deploy EntropyOracle
-     * @param _chaosEngine Address of FHEChaosEngine contract
-     * @param _feeRecipient Address to receive fees
-     * @param initialOwner Initial owner address
+     * @notice Constructor - sets EntropyOracle address
+     * @param _entropyOracle Address of EntropyOracle contract
      */
-    constructor(
-        address _chaosEngine,
-        address _feeRecipient,
-        address initialOwner
-    ) Ownable(initialOwner) {
-        if (_chaosEngine == address(0)) revert InvalidAddress();
-        if (_feeRecipient == address(0)) revert InvalidAddress();
-        
-        chaosEngine = FHEChaosEngine(_chaosEngine);
-        feeRecipient = _feeRecipient;
-        requestCounter = 0;
+    constructor(address _entropyOracle) {
+        require(_entropyOracle != address(0), "Invalid oracle address");
+        entropyOracle = IEntropyOracle(_entropyOracle);
     }
     
-    // ============ Main Function (Developer Interface) ============
+    /**
+     * @notice Store encrypted value and make it publicly decryptable
+     * @param key Key/index for storing the value
+     * @param encryptedInput Encrypted value from user
+     * @param inputProof Input proof for encrypted value
+     * @dev Makes value decryptable by anyone (use with caution)
+     */
+    function storeAndMakePublic(
+        uint256 key,
+        externalEuint64 encryptedInput,
+        bytes calldata inputProof
+    ) external {
+        require(!isInitialized[key], "Key already initialized");
+        
+        // Convert external to internal
+        euint64 internalValue = FHE.fromExternal(encryptedInput, inputProof);
+        
+        // Allow contract to use
+        FHE.allowThis(internalValue);
+        
+        // Make publicly decryptable (anyone can decrypt)
+        encryptedValues[key] = FHE.makePubliclyDecryptable(internalValue);
+        isInitialized[key] = true;
+        totalValues++;
+        
+        emit ValueStored(key, msg.sender);
+        emit ValueMadePubliclyDecryptable(key);
+    }
     
     /**
-     * @notice Request entropy - Main function for developers
-     * @param tag Unique tag for this request (e.g., keccak256("lottery-draw"))
-     * @return requestId Unique request ID
-     * @dev Requires exactly 0.00001 ETH fee
+     * @notice Store multiple encrypted values and make them publicly decryptable
+     * @param keys Array of keys for storing values
+     * @param encryptedInputs Array of encrypted values from user
+     * @param inputProofs Array of input proofs for encrypted values
+     * @dev Batch operation to store and make multiple values publicly decryptable
      */
-    function requestEntropy(bytes32 tag) 
-        external 
-        payable 
-        nonReentrant 
-        returns (uint256 requestId) 
-    {
-        // Check fee
-        if (msg.value < FEE_AMOUNT) {
-            revert InsufficientFee(FEE_AMOUNT, msg.value);
+    function storeAndMakePublicBatch(
+        uint256[] calldata keys,
+        externalEuint64[] calldata encryptedInputs,
+        bytes[] calldata inputProofs
+    ) external {
+        require(keys.length == encryptedInputs.length, "Keys and inputs length mismatch");
+        require(keys.length == inputProofs.length, "Keys and proofs length mismatch");
+        require(keys.length > 0, "Empty arrays");
+        
+        for (uint256 i = 0; i < keys.length; i++) {
+            require(!isInitialized[keys[i]], "Key already initialized");
+            
+            // Convert external to internal
+            euint64 internalValue = FHE.fromExternal(encryptedInputs[i], inputProofs[i]);
+            FHE.allowThis(internalValue);
+            
+            // Make publicly decryptable
+            encryptedValues[keys[i]] = FHE.makePubliclyDecryptable(internalValue);
+            isInitialized[keys[i]] = true;
+            totalValues++;
         }
         
-        // Increment request counter
-        requestCounter++;
-        requestId = requestCounter;
+        emit ValuesStoredBatch(keys, msg.sender);
+    }
+    
+    /**
+     * @notice Request entropy for enhanced public decryption
+     * @param tag Unique tag for this request
+     * @return requestId Request ID from EntropyOracle
+     * @dev Requires 0.00001 ETH fee
+     */
+    function requestEntropy(bytes32 tag) external payable returns (uint256 requestId) {
+        require(msg.value >= entropyOracle.getFee(), "Insufficient fee");
         
-        // Generate entropy using chaos engine
-        // Pass requestId for seed consistency
-        euint64 entropy = chaosEngine.generateEntropy(tag, msg.sender, requestId);
+        requestId = entropyOracle.requestEntropy{value: msg.value}(tag);
+        entropyRequests[requestId] = true;
         
-        // Store request
-        requests[requestId] = EntropyRequest({
-            consumer: msg.sender,
-            tag: tag,
-            encryptedEntropy: entropy,
-            timestamp: block.timestamp,
-            fulfilled: true
-        });
-        
-        // Transfer fee to recipient
-        if (feeRecipient != address(0)) {
-            (bool success, ) = payable(feeRecipient).call{value: msg.value}("");
-            require(success, "Fee transfer failed");
-        }
-        
-        // Hash sensitive data for privacy in events
-        // Consumer: hash address for privacy
-        bytes32 hashedConsumer = keccak256(abi.encodePacked(msg.sender));
-        
-        // Tag: hash the tag for privacy
-        bytes32 hashedTag = keccak256(abi.encodePacked(tag));
-        
-        emit EntropyRequested(requestId, hashedConsumer, hashedTag, msg.value);
-        emit EntropyFulfilled(requestId, hashedConsumer, hashedTag);
-        
+        emit EntropyRequested(requestId, msg.sender);
         return requestId;
     }
     
-    // ============ View Functions ============
+    /**
+     * @notice Store value with entropy enhancement and make publicly decryptable
+     * @param key Key/index for storing the value
+     * @param encryptedInput Encrypted value from user
+     * @param inputProof Input proof for encrypted value
+     * @param requestId Request ID from requestEntropy()
+     */
+    function storeAndMakePublicWithEntropy(
+        uint256 key,
+        externalEuint64 encryptedInput,
+        bytes calldata inputProof,
+        uint256 requestId
+    ) external {
+        require(!isInitialized[key], "Key already initialized");
+        require(entropyRequests[requestId], "Invalid request ID");
+        require(entropyOracle.isRequestFulfilled(requestId), "Entropy not ready");
+        
+        // Convert external to internal
+        euint64 internalValue = FHE.fromExternal(encryptedInput, inputProof);
+        FHE.allowThis(internalValue);
+        
+        // Get entropy
+        euint64 entropy = entropyOracle.getEncryptedEntropy(requestId);
+        FHE.allowThis(entropy);
+        
+        // Combine value with entropy
+        euint64 enhancedValue = FHE.xor(internalValue, entropy);
+        FHE.allowThis(enhancedValue);
+        
+        // Make enhanced value publicly decryptable
+        encryptedValues[key] = FHE.makePubliclyDecryptable(enhancedValue);
+        isInitialized[key] = true;
+        totalValues++;
+        
+        entropyRequests[requestId] = false;
+        emit ValueStoredWithEntropy(key, requestId, msg.sender);
+        emit ValueMadePubliclyDecryptable(key);
+    }
     
     /**
-     * @notice Get encrypted entropy for a request
-     * @param requestId Request ID returned from requestEntropy
-     * @return entropy Encrypted entropy (euint64)
+     * @notice Store multiple values with entropy enhancement and make publicly decryptable
+     * @param keys Array of keys for storing values
+     * @param encryptedInputs Array of encrypted values from user
+     * @param inputProofs Array of input proofs for encrypted values
+     * @param requestId Request ID from requestEntropy()
+     * @dev Batch operation with entropy enhancement
      */
-    function getEncryptedEntropy(uint256 requestId) 
-        external 
-        view 
-        returns (euint64) 
-    {
-        if (!requests[requestId].fulfilled) {
-            revert RequestNotFulfilled(requestId);
+    function storeAndMakePublicBatchWithEntropy(
+        uint256[] calldata keys,
+        externalEuint64[] calldata encryptedInputs,
+        bytes[] calldata inputProofs,
+        uint256 requestId
+    ) external {
+        require(entropyRequests[requestId], "Invalid request ID");
+        require(entropyOracle.isRequestFulfilled(requestId), "Entropy not ready");
+        require(keys.length == encryptedInputs.length, "Keys and inputs length mismatch");
+        require(keys.length == inputProofs.length, "Keys and proofs length mismatch");
+        require(keys.length > 0, "Empty arrays");
+        
+        // Get entropy once for all values
+        euint64 entropy = entropyOracle.getEncryptedEntropy(requestId);
+        FHE.allowThis(entropy);
+        
+        for (uint256 i = 0; i < keys.length; i++) {
+            require(!isInitialized[keys[i]], "Key already initialized");
+            
+            // Convert external to internal
+            euint64 internalValue = FHE.fromExternal(encryptedInputs[i], inputProofs[i]);
+            FHE.allowThis(internalValue);
+            
+            // Combine with entropy
+            euint64 enhancedValue = FHE.xor(internalValue, entropy);
+            FHE.allowThis(enhancedValue);
+            
+            // Make enhanced value publicly decryptable
+            encryptedValues[keys[i]] = FHE.makePubliclyDecryptable(enhancedValue);
+            isInitialized[keys[i]] = true;
+            totalValues++;
         }
-        return requests[requestId].encryptedEntropy;
-    }
-    
-    /**
-     * @notice Check if request is fulfilled
-     * @param requestId Request ID
-     * @return fulfilled True if entropy is ready
-     */
-    function isRequestFulfilled(uint256 requestId) 
-        external 
-        view 
-        returns (bool) 
-    {
-        return requests[requestId].fulfilled;
-    }
-    
-    /**
-     * @notice Get request details
-     * @param requestId Request ID
-     * @return consumer Consumer address
-     * @return tag Request tag
-     * @return timestamp Request timestamp
-     * @return fulfilled Fulfillment status
-     */
-    function getRequest(uint256 requestId) 
-        external 
-        view 
-        returns (
-            address consumer,
-            bytes32 tag,
-            uint256 timestamp,
-            bool fulfilled
-        ) 
-    {
-        EntropyRequest memory request = requests[requestId];
-        return (
-            request.consumer,
-            request.tag,
-            request.timestamp,
-            request.fulfilled
-        );
-    }
-    
-    /**
-     * @notice Get current fee amount
-     * @return fee Fee in wei (0.00001 ETH = 10000000000000 wei)
-     */
-    function getFee() external pure returns (uint256) {
-        return FEE_AMOUNT;
-    }
-    
-    // ============ Admin Functions ============
-    
-    /**
-     * @notice Update fee recipient (owner only)
-     * @param newRecipient New fee recipient address
-     */
-    function setFeeRecipient(address newRecipient) external onlyOwner {
-        if (newRecipient == address(0)) revert InvalidAddress();
         
-        address oldRecipient = feeRecipient;
-        feeRecipient = newRecipient;
-        
-        emit FeeRecipientUpdated(oldRecipient, newRecipient);
+        entropyRequests[requestId] = false;
+        emit ValuesStoredBatchWithEntropy(keys, requestId, msg.sender);
     }
     
     /**
-     * @notice Update chaos engine (owner only, emergency use)
-     * @param newEngine New chaos engine address
+     * @notice Get encrypted value at a specific key (publicly decryptable)
+     * @param key Key/index to retrieve
+     * @return Encrypted value (euint64) - anyone can decrypt this
+     * @dev Anyone can use FHEVM SDK publicDecrypt to decrypt this value
      */
-    function setChaosEngine(address newEngine) external onlyOwner {
-        if (newEngine == address(0)) revert InvalidAddress();
-        
-        address oldEngine = address(chaosEngine);
-        chaosEngine = FHEChaosEngine(newEngine);
-        
-        emit ChaosEngineUpdated(oldEngine, newEngine);
+    function getEncryptedValue(uint256 key) external view returns (euint64) {
+        require(isInitialized[key], "Key not initialized");
+        return encryptedValues[key];
     }
     
     /**
-     * @notice Emergency withdraw (owner only)
-     * @param to Recipient address
-     * @param amount Amount to withdraw
+     * @notice Check if a key is initialized
+     * @param key Key to check
+     * @return true if initialized, false otherwise
      */
-    function emergencyWithdraw(address to, uint256 amount) external onlyOwner {
-        if (to == address(0)) revert InvalidAddress();
-        (bool success, ) = payable(to).call{value: amount}("");
-        require(success, "Withdraw failed");
+    function isKeyInitialized(uint256 key) external view returns (bool) {
+        return isInitialized[key];
+    }
+    
+    /**
+     * @notice Get total number of values stored
+     * @return Total count of initialized values
+     */
+    function getTotalValues() external view returns (uint256) {
+        return totalValues;
+    }
+    
+    /**
+     * @notice Get EntropyOracle address
+     */
+    function getEntropyOracle() external view returns (address) {
+        return address(entropyOracle);
     }
 }
 
 
 ```
 
+## 🧪 Tests
+
+See [test file](./test/EntropyPublicDecryptMultiple.test.ts) for comprehensive test coverage.
+
+```bash
+npm test
+```
 
 
 ## 📚 Category
